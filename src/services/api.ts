@@ -1,10 +1,7 @@
-import Constants from "expo-constants";
 import { useAuthStore } from "@/store/authStore";
+import { getApiUrl } from "@/services/configService";
 import type { Lecture, LectureDetail, Note } from "@/types/lecture";
 import type { QuizQuestion, ChatMessage } from "@/types/quiz";
-
-const API_URL =
-  (Constants.expoConfig?.extra?.apiUrl as string) ?? "http://192.168.137.1:8000";
 
 class ApiError extends Error {
   status: number;
@@ -22,10 +19,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  console.log("➡️ Request:", API_URL + path, options);
+  const url = `${getApiUrl()}${path}`;
+  console.log("➡️ Request:", url, options);
 
   try {
-    const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+    const res = await fetch(url, { ...options, headers });
     console.log("⬅️ Response status:", res.status);
 
     if (!res.ok) {
@@ -41,7 +39,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
-  API_URL,
+  get API_URL() {
+    return getApiUrl();
+  },
 
   // --- Auth ---
   async register(email: string, password: string, fullName?: string) {
@@ -59,7 +59,7 @@ export const api = {
     body.append("password", password);
 
     try {
-      const res = await fetch(`${API_URL}/api/v1/auth/login`, {
+      const res = await fetch(`${getApiUrl()}/api/v1/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: body.toString(),

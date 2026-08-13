@@ -1,12 +1,9 @@
 import { useCallback, useRef } from "react";
-import Constants from "expo-constants"; // 👈 Added to read your app.json extra config
 import { LectureSocket } from "@/services/websocket";
+import { getApiUrl } from "@/services/configService";
 import { useLectureStore } from "@/store/lectureStore";
 import { useAuthStore, getFreshToken } from "@/store/authStore";
 import type { LectureSocketEvent } from "@/types/lecture";
-
-// Dynamically extract the backend API base url from your app.json configuration values
-const API_BASE_URL = Constants.expoConfig?.extra?.apiUrl || "http://192.168.137.1:8000";
 
 export function useLectureSocket() {
   const socketRef = useRef<LectureSocket | null>(null);
@@ -74,11 +71,10 @@ export function useLectureSocket() {
     try {
       setStatus("processing");
 
-      // Pull the absolute freshest token directly from Zustand right now
       const activeToken = getFreshToken();
+      const apiUrl = getApiUrl(); // ✅ from GitHub-hosted config, not hardcoded
 
-      // ✅ 1. Replaced localhost with your dynamic IP string variable
-      await fetch(`${API_BASE_URL}/api/v1/lectures/${idToSync}/end`, {
+      await fetch(`${apiUrl}/api/v1/lectures/${idToSync}/end`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${activeToken}`,
@@ -86,14 +82,11 @@ export function useLectureSocket() {
         }
       });
 
-      // 2. Wait window for background Gemini task assembly
       await new Promise((resolve) => setTimeout(resolve, 14000));
 
-      // Pull token again just in case a refresh loop processed during the 14-second wait
       const freshToken = getFreshToken();
 
-      // ✅ 3. Replaced localhost here as well
-      const response = await fetch(`${API_BASE_URL}/api/v1/lectures/${idToSync}`, {
+      const response = await fetch(`${apiUrl}/api/v1/lectures/${idToSync}`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${freshToken}`,

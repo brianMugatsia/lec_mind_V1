@@ -1,7 +1,5 @@
-import Constants from "expo-constants";
 import type { LectureSocketEvent } from "@/types/lecture";
-
-const WS_URL = (Constants.expoConfig?.extra?.wsUrl as string) ?? "ws://localhost:8000";
+import { getWsUrl } from "@/services/configService";
 
 type EventHandler = (event: LectureSocketEvent) => void;
 type StatusHandler = (status: "connecting" | "open" | "closed" | "error") => void;
@@ -25,7 +23,12 @@ export class LectureSocket {
   connect() {
     this.shouldReconnect = true;
     this.onStatus("connecting");
-    const url = `${WS_URL}/ws/lectures/${this.lectureId}/stream?token=${this.token}`;
+
+    // ✅ Pulled fresh on every connect/reconnect so a background config
+    // refresh takes effect without needing an app restart.
+    const wsUrl = getWsUrl();
+    const url = `${wsUrl}/ws/lectures/${this.lectureId}/stream?token=${this.token}`;
+
     this.ws = new WebSocket(url);
     this.ws.binaryType = "arraybuffer";
 
@@ -78,4 +81,3 @@ export class LectureSocket {
     this.ws?.close();
   }
 }
-git
